@@ -4,6 +4,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Progress } from "./ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import pptxgen from "pptxgenjs";
 
 export const PresentationForm = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +55,61 @@ export const PresentationForm = () => {
     return data.choices[0].message.content;
   };
 
+  const createPowerPoint = async (slideContent: string) => {
+    try {
+      // Parse the JSON string into an array of slides
+      const slides = JSON.parse(slideContent);
+      
+      // Create a new PowerPoint presentation
+      const pres = new pptxgen();
+
+      // Set the presentation properties
+      pres.author = "AI PowerPoint Generator";
+      pres.title = formData.topic;
+
+      // Create a title slide
+      const titleSlide = pres.addSlide();
+      titleSlide.addText(formData.topic, {
+        x: "center",
+        y: "40%",
+        fontSize: 44,
+        bold: true,
+        color: "363636",
+      });
+
+      // Add content slides
+      slides.forEach((slide: { title: string; content: string[] }) => {
+        const contentSlide = pres.addSlide();
+        
+        // Add slide title
+        contentSlide.addText(slide.title, {
+          x: 0.5,
+          y: 0.5,
+          w: "90%",
+          fontSize: 32,
+          bold: true,
+          color: "363636",
+        });
+
+        // Add bullet points
+        contentSlide.addText(slide.content, {
+          x: 0.5,
+          y: 1.5,
+          w: "90%",
+          fontSize: 18,
+          bullet: true,
+          color: "666666",
+        });
+      });
+
+      // Save the presentation
+      await pres.writeFile({ fileName: `${formData.topic.replace(/[^a-z0-9]/gi, '_')}.pptx` });
+    } catch (error) {
+      console.error("Error creating PowerPoint:", error);
+      throw new Error("Failed to create PowerPoint file");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.apiKey || !formData.topic) {
@@ -79,13 +135,13 @@ export const PresentationForm = () => {
       setProgress(60);
       console.log("Generated content:", slideContent);
       
-      // Here we would process the slideContent and create a PowerPoint file
-      // For now, we'll just log it and show success
+      // Create and download the PowerPoint file
+      await createPowerPoint(slideContent);
       setProgress(100);
       
       toast({
         title: "Success!",
-        description: "Your presentation content has been generated",
+        description: "Your presentation has been generated and downloaded",
       });
     } catch (error) {
       console.error("Error:", error);
