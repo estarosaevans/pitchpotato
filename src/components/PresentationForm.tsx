@@ -16,6 +16,44 @@ export const PresentationForm = () => {
     apiKey: "",
   });
 
+  const generateSlideContent = async (topic: string, slideCount: number, keyPoints: string) => {
+    const prompt = `Create a presentation about "${topic}" with ${slideCount} slides.${
+      keyPoints ? `\nInclude these key points:\n${keyPoints}` : ""
+    }
+
+    Format the response as a JSON array where each object represents a slide with:
+    - title: The slide title
+    - content: Array of bullet points for the slide
+    
+    Make it engaging and informative.`;
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${formData.apiKey}`,
+        "HTTP-Referer": window.location.href,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "meta-llama/llama-3.3-70b-instruct",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to generate presentation");
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.apiKey || !formData.topic) {
@@ -31,22 +69,29 @@ export const PresentationForm = () => {
     setProgress(10);
 
     try {
-      // Here we would make the API call to OpenRouter
-      // For now, we'll just simulate progress
       setProgress(30);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const slideContent = await generateSlideContent(
+        formData.topic,
+        parseInt(formData.slideCount),
+        formData.keyPoints
+      );
+      
       setProgress(60);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log("Generated content:", slideContent);
+      
+      // Here we would process the slideContent and create a PowerPoint file
+      // For now, we'll just log it and show success
       setProgress(100);
       
       toast({
         title: "Success!",
-        description: "Your presentation is ready for download",
+        description: "Your presentation content has been generated",
       });
     } catch (error) {
+      console.error("Error:", error);
       toast({
         title: "Error",
-        description: "Failed to generate presentation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate presentation",
         variant: "destructive",
       });
     } finally {
