@@ -70,11 +70,13 @@ export const PresentationForm = () => {
       // Create a title slide
       const titleSlide = pres.addSlide();
       titleSlide.addText(formData.topic, {
-        x: "center",
-        y: "40%",
+        x: 0.5,
+        y: 0.4, // Using 0.4 instead of "40%" for proper typing
+        w: "90%",
         fontSize: 44,
         bold: true,
         color: "363636",
+        align: "center", // Use align property instead of x: "center"
       });
 
       // Add content slides
@@ -91,13 +93,18 @@ export const PresentationForm = () => {
           color: "363636",
         });
 
+        // Convert string array to TextProps array for bullet points
+        const bulletPoints = slide.content.map(point => ({
+          text: point,
+          bullet: true,
+        }));
+
         // Add bullet points
-        contentSlide.addText(slide.content, {
+        contentSlide.addText(bulletPoints, {
           x: 0.5,
           y: 1.5,
           w: "90%",
           fontSize: 18,
-          bullet: true,
           color: "666666",
         });
       });
